@@ -1,5 +1,6 @@
 package com.trustly.user.entity;
 
+import com.trustly.common.enums.Role;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -24,4 +25,9 @@ public class User {
 
     @Column(nullable = false)
     private String password;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Role role;
+    @Column(nullable = false)
+    private Integer tokenVersion = 0;
 }
