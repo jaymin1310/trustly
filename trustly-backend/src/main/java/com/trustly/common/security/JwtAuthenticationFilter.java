@@ -38,6 +38,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try{
             final String token = authHeader.substring(7);
             final String username = jwtService.extractUsername(token);
+            String tokenType = jwtService.extractTokenType(token);
+            if (!"ACCESS".equals(tokenType)) {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.setContentType("application/json");
+                response.getWriter()
+                        .write("{\"error\": \"Invalid token type\"}");
+                return;
+            }
 
             if (username != null &&
                     SecurityContextHolder.getContext().getAuthentication() == null) {
@@ -55,7 +63,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     Integer tokenVersionFromDb =
                             customUserDetails.getTokenVersion();
                     if (!tokenVersionFromJwt.equals(tokenVersionFromDb)) {
-                        filterChain.doFilter(request, response);
+                        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                        response.setContentType("application/json");
+                        response.getWriter()
+                                .write("{\"error\": \"Token revoked\"}");
                         return;
                     }
                     UsernamePasswordAuthenticationToken authToken =

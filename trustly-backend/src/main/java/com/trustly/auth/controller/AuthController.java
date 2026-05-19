@@ -71,26 +71,45 @@ public class AuthController {
         AuthResponse response = authService.refreshToken(request);
         return ResponseEntity.ok(response);
     }
-
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse> logout(
-            HttpServletRequest request
+            @Valid @RequestBody RefreshTokenRequest request
     ) {
-
-        String authHeader = request.getHeader("Authorization");
-
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            throw new UnauthorizedException("Invalid Authorization header");
-        }
-
-        String token = authHeader.substring(7);
-
-        authService.logout(token);
+        authService.logoutCurrentDevice(
+                request.getRefreshToken()
+        );
 
         return ResponseEntity.ok(
                 ApiResponse.builder()
                         .success(true)
-                        .message("Logout successful")
+                        .message("Logged out successfully")
+                        .build()
+        );
+    }
+    @PostMapping("/logout-all")
+    public ResponseEntity<ApiResponse> logoutAll(
+            HttpServletRequest request
+    ) {
+
+        String authHeader =
+                request.getHeader("Authorization");
+
+        if (authHeader == null ||
+                !authHeader.startsWith("Bearer ")) {
+
+            throw new UnauthorizedException(
+                    "Invalid Authorization header"
+            );
+        }
+
+        String token = authHeader.substring(7);
+
+        authService.logoutAllDevices(token);
+
+        return ResponseEntity.ok(
+                ApiResponse.builder()
+                        .success(true)
+                        .message("Logged out from all devices")
                         .build()
         );
     }

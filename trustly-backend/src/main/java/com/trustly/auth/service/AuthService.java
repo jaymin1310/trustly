@@ -5,6 +5,7 @@ import com.trustly.auth.dto.response.ApiResponse;
 import com.trustly.auth.dto.response.AuthResponse;
 import com.trustly.auth.dto.response.OtpResponse;
 import com.trustly.auth.entity.RefreshToken;
+import com.trustly.auth.repository.RefreshTokenRepository;
 import com.trustly.common.enums.OtpType;
 import com.trustly.common.enums.Role;
 import com.trustly.common.exception.DuplicateResourceException;
@@ -14,6 +15,7 @@ import com.trustly.common.security.CustomUserDetailsService;
 import com.trustly.common.security.JwtService;
 import com.trustly.user.entity.User;
 import com.trustly.user.repository.UserRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -36,6 +38,7 @@ public class AuthService {
     private final CustomUserDetailsService userDetailsService;
     private final OtpService otpService;
     private final EmailService emailService;
+    private final RefreshTokenRepository refreshTokenRepository;
     public final String otpMsg="If account exists, OTP has been sent";
     public ApiResponse register(RegisterRequest request) {
         Optional<User> existingUser =
@@ -117,7 +120,6 @@ public class AuthService {
 
         RefreshToken refreshToken =
                 refreshTokenService.createRefreshToken(user, userDetails, user.getTokenVersion());
-
         return AuthResponse.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken.getToken())
@@ -125,7 +127,6 @@ public class AuthService {
                 .roles(user.getRoles())
                 .build();
     }
-
     public AuthResponse refreshToken(RefreshTokenRequest request) {
         RefreshToken refreshToken =
                 refreshTokenService.validateRefreshToken(
@@ -145,19 +146,6 @@ public class AuthService {
                 .email(user.getEmail())
                 .roles(user.getRoles())
                 .build();
-    }
-    public void logout(String accessToken) {
-        String username = jwtService.extractUsername(accessToken);
-        Integer tokenVersion = jwtService.extractTokenVersion(accessToken);
-        User user = userRepository.findByEmail(username).orElseThrow(() ->
-                new UnauthorizedException("Invalid or expired token"));
-        if (!tokenVersion.equals(user.getTokenVersion())) {
-            throw new UnauthorizedException("Invalid or expired token");
-        }
-        // Increment version (INVALIDATES ALL ACCESS TOKENS)
-        user.setTokenVersion(user.getTokenVersion() + 1);
-        userRepository.save(user);
-        refreshTokenService.deleteByUser(user);
     }
     public ApiResponse resendVerificationOtp(OtpRequest request) {
 
@@ -231,5 +219,34 @@ public class AuthService {
                 .message(otpResponse.getMessage())
                 .success(otpResponse.isSuccess())
                 .build();
+    }
+    @Transactional
+    public void logoutAllDevices(String accessToken) {
+
+        String username =
+                jwtService.extractUsername(accessToken);
+
+        User user = userRepository.findByEmail(username)
+                .orElseThrow(() ->
+                        new UnauthorizedException(
+                                "Invalid token"
+                        )
+                );
+        user.setTokenVersion(
+                user.getTokenVersion() + 1
+        );
+        userRepository.save(user);
+        refreshTokenService.deleteByUser(user);
+    }
+    @Transactional
+    public void logoutCurrentDevice(String refreshTokenValue) {
+
+        RefreshToken refreshToken =
+                refreshTokenService.validateRefreshToken(
+                        refreshTokenValue
+                );
+
+        refreshToken.setRevoked(true);
+        refreshTokenRepository.save(refreshToken);
     }
 }
