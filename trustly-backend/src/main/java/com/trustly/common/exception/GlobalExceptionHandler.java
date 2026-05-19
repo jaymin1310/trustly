@@ -1,74 +1,135 @@
 package com.trustly.common.exception;
 
+import com.trustly.common.response.ErrorResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
-    @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<String> handleNotFound(
-            ResourceNotFoundException ex
+
+    @ExceptionHandler(BadRequestException.class)
+    public ResponseEntity<ErrorResponse> handleBadRequest(
+            BadRequestException ex
     ) {
-        log.error("Unhandled exception occurred", ex);
-        return ResponseEntity
-                .status(HttpStatus.NOT_FOUND)
-                .body(ex.getMessage());
+        log.warn("Bad request: {}", ex.getMessage());
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse(
+                        false,
+                        ex.getMessage(),
+                        LocalDateTime.now()
+                ));
     }
 
     @ExceptionHandler(DuplicateResourceException.class)
-    public ResponseEntity<String> handleDuplicate(
+    public ResponseEntity<ErrorResponse> handleDuplicateResource(
             DuplicateResourceException ex
     ) {
-        return ResponseEntity
-                .status(HttpStatus.CONFLICT)
-                .body(ex.getMessage());
-    }
+        log.warn("Duplicate resource: {}", ex.getMessage());
 
-    @ExceptionHandler(BadRequestException.class)
-    public ResponseEntity<String> handleBadRequest(
-            BadRequestException ex
-    ) {
-        return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
-                .body(ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse(
+                        false,
+                        ex.getMessage(),
+                        LocalDateTime.now()
+                ));
     }
 
     @ExceptionHandler(UnauthorizedException.class)
-    public ResponseEntity<String> handleUnauthorized(
+    public ResponseEntity<ErrorResponse> handleUnauthorized(
             UnauthorizedException ex
     ) {
-        return ResponseEntity
-                .status(HttpStatus.UNAUTHORIZED)
-                .body(ex.getMessage());
+        log.warn("Unauthorized access: {}", ex.getMessage());
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(new ErrorResponse(
+                        false,
+                        ex.getMessage(),
+                        LocalDateTime.now()
+                ));
     }
 
     @ExceptionHandler(ForbiddenException.class)
-    public ResponseEntity<String> handleForbidden(
+    public ResponseEntity<ErrorResponse> handleForbidden(
             ForbiddenException ex
     ) {
-        return ResponseEntity
-                .status(HttpStatus.FORBIDDEN)
-                .body(ex.getMessage());
+        log.warn("Forbidden access: {}", ex.getMessage());
+
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(new ErrorResponse(
+                        false,
+                        ex.getMessage(),
+                        LocalDateTime.now()
+                ));
+    }
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleResourceNotFound(
+            ResourceNotFoundException ex
+    ) {
+        log.warn("Resource not found: {}", ex.getMessage());
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(
+                        false,
+                        ex.getMessage(),
+                        LocalDateTime.now()
+                ));
+    }
+
+    @ExceptionHandler(InvalidOtpException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidOtp(
+            InvalidOtpException ex
+    ) {
+        log.warn("OTP validation failed: {}", ex.getMessage());
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse(
+                        false,
+                        ex.getMessage(),
+                        LocalDateTime.now()
+                ));
+    }
+
+    @ExceptionHandler(EmailSendingException.class)
+    public ResponseEntity<ErrorResponse> handleEmailSending(
+            EmailSendingException ex
+    ) {
+        log.error("Email sending failed: {}", ex.getMessage(), ex);
+
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ErrorResponse(
+                        false,
+                        ex.getMessage(),
+                        LocalDateTime.now()
+                ));
     }
 
     @ExceptionHandler(InvalidTokenException.class)
-    public ResponseEntity<String> handleInvalidToken(
+    public ResponseEntity<ErrorResponse> handleInvalidToken(
             InvalidTokenException ex
     ) {
-        return ResponseEntity
-                .status(HttpStatus.UNAUTHORIZED)
-                .body(ex.getMessage());
+        log.warn("Invalid token: {}", ex.getMessage());
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(new ErrorResponse(
+                        false,
+                        ex.getMessage(),
+                        LocalDateTime.now()
+                ));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, String>> handleValidation(
+    public ResponseEntity<Map<String, Object>> handleValidation(
             MethodArgumentNotValidException ex
     ) {
 
@@ -83,17 +144,43 @@ public class GlobalExceptionHandler {
                         )
                 );
 
-        return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
-                .body(errors);
+        log.warn("Validation failed: {}", errors);
+
+        Map<String, Object> response = new HashMap<>();
+
+        response.put("success", false);
+        response.put("message", "Validation failed");
+        response.put("errors", errors);
+        response.put("timestamp", LocalDateTime.now());
+
+        return ResponseEntity.badRequest().body(response);
+    }
+
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<ErrorResponse> handleBadCredentials(
+            BadCredentialsException ex
+    ) {
+        log.warn("Invalid credentials");
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(new ErrorResponse(
+                        false,
+                        "Invalid email or password",
+                        LocalDateTime.now()
+                ));
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<String> handleGeneric(
+    public ResponseEntity<ErrorResponse> handleGeneric(
             Exception ex
     ) {
-        return ResponseEntity
-                .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ex.getMessage());
+        log.error("Unexpected error occurred", ex);
+
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ErrorResponse(
+                        false,
+                        "Something went wrong",
+                        LocalDateTime.now()
+                ));
     }
 }

@@ -79,27 +79,11 @@ public class JwtService {
     }
 
     private Claims extractAllClaims(String token) {
-        try{
             return Jwts.parserBuilder()
-                    .setSigningKey(getSigningKey())
-                    .build()
-                    .parseClaimsJws(token)
-                    .getBody();
-        } catch (ExpiredJwtException e) {
-            throw new InvalidTokenException("JWT token is expired");
-
-        } catch (UnsupportedJwtException e) {
-            throw new InvalidTokenException("JWT token is unsupported");
-
-        } catch (MalformedJwtException e) {
-            throw new InvalidTokenException("JWT token is malformed");
-
-        } catch (SignatureException e) {
-            throw new InvalidTokenException("JWT signature validation failed");
-
-        } catch (IllegalArgumentException e) {
-            throw new InvalidTokenException("JWT token is invalid");
-        }
+                .setSigningKey(getSigningKey())
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
     }
 
     private Key getSigningKey() {
