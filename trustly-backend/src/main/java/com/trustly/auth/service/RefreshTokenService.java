@@ -34,7 +34,6 @@ public class RefreshTokenService {
                         .plusSeconds(refreshTokenExpiration / 1000))
                 .revoked(false)
                 .build();
-
         return refreshTokenRepository.save(refreshToken);
     }
     @Transactional

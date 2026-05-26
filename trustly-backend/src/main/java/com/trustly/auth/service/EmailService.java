@@ -41,7 +41,7 @@ public class EmailService {
             MimeMessage mimeMessage = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
             helper.setTo(email);
-            helper.setSubject("Welcome to Task Manager");
+            helper.setSubject("Welcome to Trustly");
             String html = loadTemplate("welcome-email.html");
             html = html.replace("{{NAME}}", name);
             helper.setText(html, true);
