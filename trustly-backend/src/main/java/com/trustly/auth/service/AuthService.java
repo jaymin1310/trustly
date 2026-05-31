@@ -109,7 +109,7 @@ public class AuthService {
 
         User user = userOpt.get();
 
-        if (!user.getIsVerified()) {
+        if (Boolean.FALSE.equals(user.getIsVerified())) {
             throw new UnauthorizedException("User not verified");
         }
         UserDetails userDetails =
@@ -150,7 +150,7 @@ public class AuthService {
     public ApiResponse resendVerificationOtp(OtpRequest request) {
 
         Optional<User> userOpt = userRepository.findByEmail(request.getEmail());
-        if (userOpt.isEmpty()||userOpt.get().getIsVerified()) {
+        if (userOpt.isEmpty()||Boolean.TRUE.equals(userOpt.get().getIsVerified())) {
             return ApiResponse.builder()
                     .message(otpMsg)
                     .success(true)
@@ -165,7 +165,7 @@ public class AuthService {
     }
     public ApiResponse resendResetOtp(OtpRequest request) {
         Optional<User> userOpt = userRepository.findByEmail(request.getEmail());
-        if (userOpt.isEmpty()|| !userOpt.get().getIsVerified()) {
+        if (userOpt.isEmpty()|| Boolean.FALSE.equals(userOpt.get().getIsVerified())) {
             return ApiResponse.builder()
                     .message(otpMsg)
                     .success(true)
@@ -207,7 +207,7 @@ public class AuthService {
     }
     public ApiResponse forgotPassword(OtpRequest request) {
         Optional<User> userOpt = userRepository.findByEmail(request.getEmail());
-        if (userOpt.isEmpty()|| !userOpt.get().getIsVerified()) {
+        if (userOpt.isEmpty()|| Boolean.FALSE.equals(userOpt.get().getIsVerified())) {
             return ApiResponse.builder()
                     .message(otpMsg)
                     .success(true)

@@ -57,7 +57,6 @@ public class RefreshTokenService {
         }
         Integer tokenVersionFromJwt = jwtService.extractTokenVersion(token);
         User user = refreshToken.getUser();
-
         if (!tokenVersionFromJwt.equals(user.getTokenVersion())) {
             throw new UnauthorizedException("Refresh token is invalid due to version mismatch");
         }
