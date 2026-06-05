@@ -169,6 +169,38 @@ public class GlobalExceptionHandler {
                         LocalDateTime.now()
                 ));
     }
+    @ExceptionHandler(BusinessException.class)
+    public ResponseEntity<ErrorResponse> handleBusinessException(
+            BusinessException ex
+    ) {
+        log.warn("Business exception: {}", ex.getMessage());
+        ErrorResponse response =
+                new ErrorResponse(
+                        false,
+                        ex.getMessage(),
+                        LocalDateTime.now()
+                );
+
+        return ResponseEntity
+                .badRequest()
+                .body(response);
+    }
+    @ExceptionHandler(FileStorageException.class)
+    public ResponseEntity<ErrorResponse> handleFileStorageException(
+            FileStorageException ex
+    ) {
+        log.error("File storage exception: {}", ex.getMessage(), ex);
+        ErrorResponse response =
+                new ErrorResponse(
+                        false,
+                        ex.getMessage(),
+                        LocalDateTime.now()
+                );
+
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(response);
+    }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneric(

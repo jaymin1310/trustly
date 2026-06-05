@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
 
-public interface WorkerApplicationRepository extends JpaRepository<WorkerApplication,Integer> {
+public interface WorkerApplicationRepository extends JpaRepository<WorkerApplication,Long> {
     Page<WorkerApplication> findByStatus(
             WorkerApplicationStatus status,
             Pageable pageable

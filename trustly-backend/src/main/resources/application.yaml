@@ -35,3 +35,6 @@ jwt:
     expiration: 900000
   refresh:
     expiration: 604800000
+
+file:
+  upload_dir: uploads/worker-documents
