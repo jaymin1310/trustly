@@ -10,6 +10,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -17,11 +18,28 @@ public class FileStorageService {
 
     @Value("${file.upload-dir}")
     private String uploadDir;
+    private final Set<String> allowedExtentions=
+            Set.of(
+                    "jpg",
+                    "jpeg",
+                    "png",
+                    "pdf"
+            );
+    private final Set<String> allowedContentTypes =
+            Set.of(
+                    "image/jpeg",
+                    "image/png",
+                    "application/pdf"
+            );
 
     public String storeDocument(MultipartFile file) {
 
         try {
-
+            if (file == null || file.isEmpty()) {
+                throw new FileStorageException(
+                        "Document is required"
+                );
+            }
             Path uploadPath = Paths.get(uploadDir);
 
             if (!Files.exists(uploadPath)) {
@@ -34,11 +52,32 @@ public class FileStorageService {
             if (originalFileName == null || originalFileName.isBlank()) {
                 throw new FileStorageException("Invalid file name");
             }
+            if (!originalFileName.contains(".")) {
+                throw new FileStorageException(
+                        "File must have a valid extension"
+                );
+            }
+            String extension=originalFileName.substring(originalFileName.lastIndexOf(".")+1).toLowerCase();
+            if (!allowedExtentions.contains(extension)) {
+                throw new FileStorageException("Only jpg, jpeg, png and pdf files are allowed");
+            }
+            String contentType =
+                    file.getContentType();
+
+            if (contentType == null ||
+                    !allowedContentTypes.contains(contentType)) {
+
+                throw new FileStorageException(
+                        "Invalid file type"
+                );
+            }
+            String sanitizedFileName =
+                    originalFileName.replaceAll("\\s+", "_");
 
             String fileName =
                     UUID.randomUUID() +
                             "-" +
-                            originalFileName;
+                            sanitizedFileName;
 
             Path filePath =
                     uploadPath.resolve(fileName);

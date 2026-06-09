@@ -204,7 +204,6 @@ public class WorkerServiceImpl implements WorkerService{
     public WorkerApplicationDetailResponse getApplicationById(
             Long applicationId
     ) {
-
         WorkerApplication application =
                 workerApplicationRepository
                         .findById(applicationId)
