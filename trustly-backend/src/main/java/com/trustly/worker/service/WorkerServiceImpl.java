@@ -1,5 +1,7 @@
 package com.trustly.worker.service;
 
+import com.trustly.category.entity.ServiceCategory;
+import com.trustly.category.repository.ServiceCategoryRepository;
 import com.trustly.common.enums.Role;
 import com.trustly.common.enums.WorkerApplicationStatus;
 import com.trustly.common.exception.BusinessException;
@@ -14,6 +16,8 @@ import com.trustly.worker.dto.response.WorkerApplicationDetailResponse;
 import com.trustly.worker.dto.response.WorkerApplicationResponse;
 import com.trustly.worker.entity.WorkerApplication;
 import com.trustly.worker.repository.WorkerApplicationRepository;
+import com.trustly.workerprofile.entity.WorkerProfile;
+import com.trustly.workerprofile.repository.WorkerProfileRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -31,6 +35,8 @@ public class WorkerServiceImpl implements WorkerService{
     private final WorkerApplicationRepository  workerApplicationRepository;
     private final UserRepository userRepository;
     private final FileStorageService fileStorageService;
+    private final ServiceCategoryRepository serviceCategoryRepository;
+    private final WorkerProfileRepository workerProfileRepository;
     @Override
     @Transactional
     public void apply(
@@ -83,12 +89,19 @@ public class WorkerServiceImpl implements WorkerService{
                 fileStorageService.storeDocument(
                         document
                 );
+        ServiceCategory category =
+                serviceCategoryRepository
+                        .findById(request.getCategoryId())
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException(
+                                        "Category not found"
+                                )
+                        );
 
         WorkerApplication workerApplication =
                 WorkerApplication.builder()
                         .user(user)
                         .phone(request.getPhone())
-                        .category(request.getCategory())
                         .experienceYears(
                                 request.getExperienceYears()
                         )
@@ -100,6 +113,7 @@ public class WorkerServiceImpl implements WorkerService{
                                 request.getDocumentNumber()
                         )
                         .documentUrl(documentUrl)
+                        .category(category)
                         .status(
                                 WorkerApplicationStatus.PENDING
                         )
@@ -133,11 +147,12 @@ public class WorkerServiceImpl implements WorkerService{
                                         "No worker application found"
                                 )
                         );
-
+        ServiceCategory category =application.getCategory();
         return MyWorkerApplicationResponse
                 .builder()
                 .id(application.getId())
-                .category(application.getCategory())
+                .categoryId(category.getId())
+                .categoryName(category.getName())
                 .status(application.getStatus())
                 .adminRemark(
                         application.getAdminRemark()
@@ -178,7 +193,6 @@ public class WorkerServiceImpl implements WorkerService{
                                     pageable
                             );
         }
-
         return applications.map(
                 application ->
                         WorkerApplicationResponse
@@ -190,9 +204,8 @@ public class WorkerServiceImpl implements WorkerService{
                                 .email(
                                         application.getUser().getEmail()
                                 )
-                                .category(
-                                        application.getCategory()
-                                )
+                                .categoryId(application.getCategory().getId())
+                                .categoryName(application.getCategory().getName())
                                 .status(
                                         application.getStatus()
                                 )
@@ -213,6 +226,7 @@ public class WorkerServiceImpl implements WorkerService{
                                 )
                         );
 
+
         return WorkerApplicationDetailResponse
                 .builder()
                 .id(application.getId())
@@ -223,7 +237,8 @@ public class WorkerServiceImpl implements WorkerService{
                         application.getUser().getEmail()
                 )
                 .phone(application.getPhone())
-                .category(application.getCategory())
+                .categoryId(application.getCategory().getId())
+                .categoryName(application.getCategory().getName())
                 .experienceYears(
                         application.getExperienceYears()
                 )
@@ -289,7 +304,13 @@ public class WorkerServiceImpl implements WorkerService{
         application.setStatus(
                 WorkerApplicationStatus.APPROVED
         );
+        WorkerProfile profile = WorkerProfile.builder()
+                .worker(application.getUser())
+                .experienceYears(application.getExperienceYears())
+                .profileCompleted(false)
+                .build();
 
+        workerProfileRepository.save(profile);
         application.setReviewedBy(admin);
 
         application.setReviewedAt(

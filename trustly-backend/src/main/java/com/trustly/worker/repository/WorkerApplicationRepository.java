@@ -22,4 +22,5 @@ public interface WorkerApplicationRepository extends JpaRepository<WorkerApplica
             Long userId,
             WorkerApplicationStatus status
     );
+    Optional<WorkerApplication> findByUserId(Long userId);
 }

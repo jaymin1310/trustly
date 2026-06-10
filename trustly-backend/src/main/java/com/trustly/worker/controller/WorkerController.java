@@ -1,4 +1,4 @@
-package com.trustly.worker.Controller;
+package com.trustly.worker.controller;
 
 import com.trustly.common.response.SuccessResponse;
 import com.trustly.worker.dto.request.ApplyWorkerRequest;

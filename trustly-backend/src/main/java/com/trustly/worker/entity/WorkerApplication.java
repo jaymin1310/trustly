@@ -1,6 +1,6 @@
 package com.trustly.worker.entity;
+import com.trustly.category.entity.ServiceCategory;
 import com.trustly.common.enums.DocumentType;
-import com.trustly.common.enums.ServiceCategory;
 import com.trustly.common.enums.WorkerApplicationStatus;
 import com.trustly.user.entity.User;
 import jakarta.persistence.*;
@@ -30,8 +30,8 @@ public class WorkerApplication {
     @Column(nullable = false, length = 20)
     private String phone;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id", nullable = false)
     private ServiceCategory category;
 
     private Integer experienceYears;

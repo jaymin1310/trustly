@@ -1,6 +1,4 @@
 package com.trustly.worker.dto.response;
-
-import com.trustly.common.enums.ServiceCategory;
 import com.trustly.common.enums.WorkerApplicationStatus;
 import lombok.Builder;
 import lombok.Getter;
@@ -15,7 +13,9 @@ public class MyWorkerApplicationResponse {
 
     private Long id;
 
-    private ServiceCategory category;
+    private Long categoryId;
+
+    private String categoryName;
 
     private WorkerApplicationStatus status;
 

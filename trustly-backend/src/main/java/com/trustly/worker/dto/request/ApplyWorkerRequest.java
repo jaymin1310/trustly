@@ -1,7 +1,6 @@
 package com.trustly.worker.dto.request;
 
 import com.trustly.common.enums.DocumentType;
-import com.trustly.common.enums.ServiceCategory;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -19,8 +18,8 @@ public class ApplyWorkerRequest {
     )
     private String phone;
 
-    @NotNull(message = "Service category is required")
-    private ServiceCategory category;
+    @NotNull(message = "Category id is required")
+    private Long categoryId;
 
     @PositiveOrZero(message = "Experience years cannot be negative")
     private Integer experienceYears;
