@@ -17,6 +17,8 @@ public class WorkerProfileMapper {
                 .workerName(profile.getWorker().getName())
                 .bio(profile.getBio())
                 .experienceYears(profile.getExperienceYears())
+                .categoryId(profile.getCategory().getId())
+                .categoryName(profile.getCategory().getName())
                 .city(profile.getCity())
                 .state(profile.getState())
                 .profileCompleted(profile.getProfileCompleted())

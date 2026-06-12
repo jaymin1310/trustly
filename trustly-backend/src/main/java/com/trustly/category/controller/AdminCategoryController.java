@@ -24,7 +24,7 @@ public class AdminCategoryController {
         return categoryManagementService.createCategory(request);
     }
 
-    @PutMapping("/{categoryId}")
+    @PatchMapping("/{categoryId}")
     public CategoryResponse updateCategory(
             @PathVariable Long categoryId,
             @Valid @RequestBody UpdateCategoryRequest request

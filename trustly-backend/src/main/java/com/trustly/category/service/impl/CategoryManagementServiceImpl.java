@@ -54,26 +54,38 @@ public class CategoryManagementServiceImpl
                         "Category not found with id: " + categoryId
                 ));
 
-        Optional<ServiceCategory> existingCategory =
-                categoryRepository.findByNameIgnoreCase(request.getName().trim());
+        if (request.getName() != null) {
 
-        if (existingCategory.isPresent()
-                && !existingCategory.get().getId().equals(categoryId)) {
+            Optional<ServiceCategory> existingCategory =
+                    categoryRepository.findByNameIgnoreCase(
+                            request.getName().trim()
+                    );
 
-            throw new DuplicateResourceException(
-                    "Category already exists with name: " + request.getName()
-            );
+            if (existingCategory.isPresent()
+                    && !existingCategory.get().getId().equals(categoryId)) {
+
+                throw new DuplicateResourceException(
+                        "Category already exists with name: "
+                                + request.getName()
+                );
+            }
+
+            category.setName(request.getName().trim());
         }
 
-        category.setName(request.getName().trim());
-        category.setDescription(request.getDescription());
-        category.setActive(request.getActive());
+        if (request.getDescription() != null) {
+            category.setDescription(request.getDescription());
+        }
 
-        ServiceCategory updatedCategory = categoryRepository.save(category);
+        if (request.getActive() != null) {
+            category.setActive(request.getActive());
+        }
+
+        ServiceCategory updatedCategory =
+                categoryRepository.save(category);
 
         return mapToResponse(updatedCategory);
     }
-
     @Override
     @Transactional
     public CategoryResponse getCategory(Long categoryId) {

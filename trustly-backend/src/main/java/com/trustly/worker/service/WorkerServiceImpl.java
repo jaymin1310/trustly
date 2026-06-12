@@ -307,6 +307,7 @@ public class WorkerServiceImpl implements WorkerService{
         WorkerProfile profile = WorkerProfile.builder()
                 .worker(application.getUser())
                 .experienceYears(application.getExperienceYears())
+                .category(application.getCategory())
                 .profileCompleted(false)
                 .build();
 

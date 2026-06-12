@@ -1,5 +1,6 @@
 package com.trustly.workerprofile.entity;
 
+import com.trustly.category.entity.ServiceCategory;
 import com.trustly.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
@@ -36,7 +37,9 @@ public class WorkerProfile {
             unique = true
     )
     private User worker;
-
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id")
+    private ServiceCategory category;
     @Column(length = 500)
     private String bio;
 

@@ -13,6 +13,10 @@ public class WorkerProfileResponse {
 
     private Long workerId;
 
+    private Long categoryId;
+
+    private String categoryName;
+
     private String workerName;
 
     private String bio;
