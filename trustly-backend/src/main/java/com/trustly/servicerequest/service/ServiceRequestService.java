@@ -32,4 +32,5 @@ public interface ServiceRequestService {
     ServiceRequestResponse requestCompletion(
             Long requestId
     );
+    ServiceRequestResponse cancelRequest(Long requestId);
 }

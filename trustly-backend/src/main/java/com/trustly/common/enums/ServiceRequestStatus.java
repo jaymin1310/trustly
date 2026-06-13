@@ -6,5 +6,6 @@ public enum ServiceRequestStatus {
     ACCEPTED,
     REJECTED,
     WORK_COMPLETION_REQUESTED,
-    COMPLETED
+    COMPLETED,
+    CANCELLED
 }

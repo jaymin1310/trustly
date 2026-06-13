@@ -8,6 +8,7 @@ import com.trustly.servicerequest.dto.request.CreateServiceRequestRequest;
 import com.trustly.servicerequest.dto.request.RejectServiceRequestRequest;
 import com.trustly.servicerequest.dto.response.ServiceRequestResponse;
 import com.trustly.servicerequest.entity.ServiceRequest;
+import com.trustly.servicerequest.mapper.ServiceRequestMapper;
 import com.trustly.servicerequest.repository.ServiceRequestRepository;
 import com.trustly.servicerequest.service.ServiceRequestService;
 import com.trustly.user.entity.User;
@@ -22,438 +23,214 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class ServiceRequestServiceImpl
-        implements ServiceRequestService {
+public class ServiceRequestServiceImpl implements ServiceRequestService {
 
     private final ServiceRequestRepository serviceRequestRepository;
     private final UserRepository userRepository;
     private final WorkerProfileRepository workerProfileRepository;
+    private final ServiceRequestMapper serviceRequestMapper;
 
+    // ---------------- CREATE ----------------
     @Override
-    public ServiceRequestResponse createServiceRequest(
-            CreateServiceRequestRequest request
-    ) {
+    public ServiceRequestResponse createServiceRequest(CreateServiceRequestRequest request) {
 
-        String email = SecurityUtils.getCurrentUserEmail();
+        User customer = getCurrentUser();
 
-        User customer = userRepository
-                .findByEmail(email)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "User not found"
-                        )
-                );
+        WorkerProfile workerProfile = workerProfileRepository.findById(request.getWorkerProfileId())
+                .orElseThrow(() -> new ResourceNotFoundException("Worker profile not found"));
 
-        WorkerProfile workerProfile = workerProfileRepository
-                .findById(request.getWorkerProfileId())
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "Worker profile not found"
-                        )
-                );
-
-        if (customer.getId().equals(
-                workerProfile.getWorker().getId()
-        )) {
-            throw new BadRequestException(
-                    "You cannot create a service request for yourself"
-            );
+        if (customer.getId().equals(workerProfile.getWorker().getId())) {
+            throw new BadRequestException("You cannot create a service request for yourself");
         }
 
-        boolean activeRequestExists =
-                serviceRequestRepository
-                        .existsByCustomerIdAndWorkerProfileIdAndStatusIn(
-                                customer.getId(),
-                                workerProfile.getId(),
-                                List.of(
-                                        ServiceRequestStatus.PENDING,
-                                        ServiceRequestStatus.ACCEPTED
-                                )
-                        );
-
-        if (activeRequestExists) {
-            throw new BadRequestException(
-                    "You already have an active service request with this worker"
-            );
+        if (!Boolean.TRUE.equals(workerProfile.getProfileCompleted())) {
+            throw new BadRequestException("Worker profile is not complete");
         }
 
-        ServiceRequest serviceRequest =
-                ServiceRequest.builder()
-                        .customer(customer)
-                        .workerProfile(workerProfile)
-                        .title(request.getTitle())
-                        .description(request.getDescription())
-                        .address(request.getAddress())
-                        .status(ServiceRequestStatus.PENDING)
-                        .build();
-
-        ServiceRequest savedRequest =
-                serviceRequestRepository.save(
-                        serviceRequest
+        boolean exists = serviceRequestRepository
+                .existsByCustomerIdAndWorkerProfileIdAndStatusIn(
+                        customer.getId(),
+                        workerProfile.getId(),
+                        List.of(ServiceRequestStatus.PENDING, ServiceRequestStatus.ACCEPTED)
                 );
 
-        return mapToResponse(savedRequest);
-    }
+        if (exists) {
+            throw new BadRequestException("Active request already exists with this worker");
+        }
 
-    private ServiceRequestResponse mapToResponse(
-            ServiceRequest serviceRequest
-    ) {
-
-        return ServiceRequestResponse.builder()
-                .id(serviceRequest.getId())
-
-                .customerId(
-                        serviceRequest.getCustomer().getId()
-                )
-                .customerName(
-                        serviceRequest.getCustomer().getName()
-                )
-
-                .workerProfileId(
-                        serviceRequest.getWorkerProfile().getId()
-                )
-                .workerId(
-                        serviceRequest.getWorkerProfile()
-                                .getWorker()
-                                .getId()
-                )
-                .workerName(
-                        serviceRequest.getWorkerProfile()
-                                .getWorker()
-                                .getName()
-                )
-
-                .categoryId(
-                        serviceRequest.getWorkerProfile()
-                                .getCategory()
-                                .getId()
-                )
-                .categoryName(
-                        serviceRequest.getWorkerProfile()
-                                .getCategory()
-                                .getName()
-                )
-
-                .title(serviceRequest.getTitle())
-                .description(serviceRequest.getDescription())
-                .address(serviceRequest.getAddress())
-
-                .status(serviceRequest.getStatus())
-
-                .requestedAt(
-                        serviceRequest.getRequestedAt()
-                )
-                .respondedAt(
-                        serviceRequest.getRespondedAt()
-                )
-                .completedAt(
-                        serviceRequest.getCompletedAt()
-                )
-                .workerRemark(
-                        serviceRequest.getWorkerRemark()
-                )
+        ServiceRequest sr = ServiceRequest.builder()
+                .customer(customer)
+                .workerProfile(workerProfile)
+                .title(request.getTitle())
+                .description(request.getDescription())
+                .address(request.getAddress())
+                .status(ServiceRequestStatus.PENDING)
                 .build();
+        return serviceRequestMapper.toResponse(serviceRequestRepository.save(sr));
     }
+
+    // ---------------- CANCEL ----------------
     @Override
-    public List<ServiceRequestResponse> getMyCustomerRequests(
-            ServiceRequestStatus status
-    ) {
+    public ServiceRequestResponse cancelRequest(Long requestId) {
 
-        String email = SecurityUtils.getCurrentUserEmail();
+        User customer = getCurrentUser();
 
-        User customer = userRepository
-                .findByEmail(email)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "User not found"
-                        )
-                );
+        ServiceRequest sr = getRequestOrThrow(requestId);
 
-        List<ServiceRequest> requests;
+        validateCustomerOwnership(sr, customer);
 
-        if (status == null) {
-
-            requests = serviceRequestRepository
-                    .findByCustomerIdOrderByRequestedAtDesc(
-                            customer.getId()
-                    );
-
-        } else {
-
-            requests = serviceRequestRepository
-                    .findByCustomerIdAndStatusOrderByRequestedAtDesc(
-                            customer.getId(),
-                            status
-                    );
+        if (sr.getStatus() == ServiceRequestStatus.COMPLETED) {
+            throw new BadRequestException("Completed request cannot be cancelled");
         }
 
-        return requests.stream()
-                .map(this::mapToResponse)
+        if (sr.getStatus() == ServiceRequestStatus.CANCELLED) {
+            throw new BadRequestException("Request already cancelled");
+        }
+
+        if (sr.getStatus() == ServiceRequestStatus.REJECTED) {
+            throw new BadRequestException("Rejected request cannot be cancelled");
+        }
+
+        if (sr.getStatus() == ServiceRequestStatus.WORK_COMPLETION_REQUESTED) {
+            throw new BadRequestException("Cannot cancel after work completion request");
+        }
+
+        sr.setStatus(ServiceRequestStatus.CANCELLED);
+        sr.setRespondedAt(LocalDateTime.now());
+
+        return serviceRequestMapper.toResponse(serviceRequestRepository.save(sr));
+    }
+
+    // ---------------- CUSTOMER REQUESTS ----------------
+    @Override
+    public List<ServiceRequestResponse> getMyCustomerRequests(ServiceRequestStatus status) {
+
+        User customer = getCurrentUser();
+
+        List<ServiceRequest> list = (status == null)
+                ? serviceRequestRepository.findByCustomerIdOrderByRequestedAtDesc(customer.getId())
+                : serviceRequestRepository.findByCustomerIdAndStatusOrderByRequestedAtDesc(customer.getId(), status);
+
+        return list.stream()
+                .map(serviceRequestMapper::toResponse)
                 .toList();
     }
+
+    // ---------------- WORKER REQUESTS ----------------
     @Override
-    public List<ServiceRequestResponse> getMyWorkerRequests(
-            ServiceRequestStatus status
-    ) {
+    public List<ServiceRequestResponse> getMyWorkerRequests(ServiceRequestStatus status) {
 
-        String email = SecurityUtils.getCurrentUserEmail();
+        User worker = getCurrentUser();
 
-        User worker = userRepository
-                .findByEmail(email)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "User not found"
-                        )
+        List<ServiceRequest> list = serviceRequestRepository
+                .findByWorkerProfileWorkerIdAndStatusOrderByRequestedAtDesc(
+                        worker.getId(),
+                        status == null ? ServiceRequestStatus.PENDING : status
                 );
 
-        List<ServiceRequest> requests;
-
-        if (status == null) {
-
-            requests = serviceRequestRepository
-                    .findByWorkerProfileWorkerIdAndStatusOrderByRequestedAtDesc(
-                            worker.getId(),
-                            ServiceRequestStatus.PENDING
-                    );
-
-        } else {
-
-            requests = serviceRequestRepository
-                    .findByWorkerProfileWorkerIdAndStatusOrderByRequestedAtDesc(
-                            worker.getId(),
-                            status
-                    );
-        }
-
-        return requests.stream()
-                .map(this::mapToResponse)
+        return list.stream()
+                .map(serviceRequestMapper::toResponse)
                 .toList();
     }
+
+    // ---------------- ACCEPT ----------------
     @Override
-    public ServiceRequestResponse acceptRequest(
-            Long requestId
-    ) {
+    public ServiceRequestResponse acceptRequest(Long requestId) {
 
-        String email = SecurityUtils.getCurrentUserEmail();
+        User worker = getCurrentUser();
+        ServiceRequest sr = getRequestOrThrow(requestId);
 
-        User worker = userRepository
-                .findByEmail(email)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "User not found"
-                        )
-                );
+        validateWorkerOwnership(sr, worker);
 
-        ServiceRequest request = serviceRequestRepository
-                .findById(requestId)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "Service request not found"
-                        )
-                );
-
-        if (!request.getWorkerProfile()
-                .getWorker()
-                .getId()
-                .equals(worker.getId())) {
-
-            throw new BadRequestException(
-                    "You are not allowed to accept this request"
-            );
+        if (sr.getStatus() != ServiceRequestStatus.PENDING) {
+            throw new BadRequestException("Only pending requests can be accepted");
         }
 
-        if (request.getStatus()
-                != ServiceRequestStatus.PENDING) {
+        sr.setStatus(ServiceRequestStatus.ACCEPTED);
+        sr.setRespondedAt(LocalDateTime.now());
 
-            throw new BadRequestException(
-                    "Only pending requests can be accepted"
-            );
-        }
-
-        request.setStatus(
-                ServiceRequestStatus.ACCEPTED
-        );
-
-        request.setRespondedAt(
-                LocalDateTime.now()
-        );
-
-        ServiceRequest savedRequest =
-                serviceRequestRepository.save(
-                        request
-                );
-
-        return mapToResponse(savedRequest);
+        return serviceRequestMapper.toResponse(serviceRequestRepository.save(sr));
     }
+
+    // ---------------- REJECT ----------------
     @Override
-    public ServiceRequestResponse rejectRequest(
-            Long requestId,
-            RejectServiceRequestRequest rejectRequest
-    ) {
+    public ServiceRequestResponse rejectRequest(Long requestId, RejectServiceRequestRequest rejectRequest) {
 
-        String email = SecurityUtils.getCurrentUserEmail();
+        User worker = getCurrentUser();
+        ServiceRequest sr = getRequestOrThrow(requestId);
 
-        User worker = userRepository
-                .findByEmail(email)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "User not found"
-                        )
-                );
+        validateWorkerOwnership(sr, worker);
 
-        ServiceRequest serviceRequest =
-                serviceRequestRepository
-                        .findById(requestId)
-                        .orElseThrow(() ->
-                                new ResourceNotFoundException(
-                                        "Service request not found"
-                                )
-                        );
-
-        if (!serviceRequest.getWorkerProfile()
-                .getWorker()
-                .getId()
-                .equals(worker.getId())) {
-
-            throw new BadRequestException(
-                    "You are not allowed to reject this request"
-            );
+        if (sr.getStatus() != ServiceRequestStatus.PENDING) {
+            throw new BadRequestException("Only pending requests can be rejected");
         }
 
-        if (serviceRequest.getStatus()
-                != ServiceRequestStatus.PENDING) {
+        sr.setStatus(ServiceRequestStatus.REJECTED);
+        sr.setRespondedAt(LocalDateTime.now());
+        sr.setWorkerRemark(rejectRequest.getWorkerRemark());
 
-            throw new BadRequestException(
-                    "Only pending requests can be rejected"
-            );
-        }
-
-        serviceRequest.setStatus(
-                ServiceRequestStatus.REJECTED
-        );
-
-        serviceRequest.setRespondedAt(
-                LocalDateTime.now()
-        );
-
-        serviceRequest.setWorkerRemark(
-                rejectRequest.getWorkerRemark()
-        );
-
-        ServiceRequest savedRequest =
-                serviceRequestRepository.save(
-                        serviceRequest
-                );
-
-        return mapToResponse(savedRequest);
+        return serviceRequestMapper.toResponse(serviceRequestRepository.save(sr));
     }
+
+    // ---------------- REQUEST COMPLETION ----------------
     @Override
-    public ServiceRequestResponse completeRequest(
-            Long requestId
-    ) {
+    public ServiceRequestResponse requestCompletion(Long requestId) {
 
-        String email = SecurityUtils.getCurrentUserEmail();
+        User worker = getCurrentUser();
+        ServiceRequest sr = getRequestOrThrow(requestId);
 
-        User customer = userRepository
-                .findByEmail(email)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "User not found"
-                        )
-                );
+        validateWorkerOwnership(sr, worker);
 
-        ServiceRequest serviceRequest =
-                serviceRequestRepository
-                        .findById(requestId)
-                        .orElseThrow(() ->
-                                new ResourceNotFoundException(
-                                        "Service request not found"
-                                )
-                        );
-
-        if (!serviceRequest.getCustomer()
-                .getId()
-                .equals(customer.getId())) {
-
-            throw new BadRequestException(
-                    "You are not allowed to complete this request"
-            );
+        if (sr.getStatus() != ServiceRequestStatus.ACCEPTED) {
+            throw new BadRequestException("Only accepted requests can request completion");
         }
 
-        if (serviceRequest.getStatus()
-                != ServiceRequestStatus.WORK_COMPLETION_REQUESTED) {
+        sr.setStatus(ServiceRequestStatus.WORK_COMPLETION_REQUESTED);
 
-            throw new BadRequestException(
-                    "Only work completion requested requests can be completed"
-            );
-        }
-
-        serviceRequest.setStatus(
-                ServiceRequestStatus.COMPLETED
-        );
-
-        serviceRequest.setCompletedAt(
-                LocalDateTime.now()
-        );
-
-        ServiceRequest savedRequest =
-                serviceRequestRepository.save(
-                        serviceRequest
-                );
-
-        return mapToResponse(savedRequest);
+        return serviceRequestMapper.toResponse(serviceRequestRepository.save(sr));
     }
+
+    // ---------------- COMPLETE ----------------
     @Override
-    public ServiceRequestResponse requestCompletion(
-            Long requestId
-    ) {
+    public ServiceRequestResponse completeRequest(Long requestId) {
 
+        User customer = getCurrentUser();
+        ServiceRequest sr = getRequestOrThrow(requestId);
+
+        validateCustomerOwnership(sr, customer);
+
+        if (sr.getStatus() != ServiceRequestStatus.WORK_COMPLETION_REQUESTED) {
+            throw new BadRequestException("Only work completion requested can be completed");
+        }
+
+        sr.setStatus(ServiceRequestStatus.COMPLETED);
+        sr.setCompletedAt(LocalDateTime.now());
+
+        return serviceRequestMapper.toResponse(serviceRequestRepository.save(sr));
+    }
+
+    // ---------------- HELPERS ----------------
+
+    private User getCurrentUser() {
         String email = SecurityUtils.getCurrentUserEmail();
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+    }
 
-        User worker = userRepository
-                .findByEmail(email)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "User not found"
-                        )
-                );
+    private ServiceRequest getRequestOrThrow(Long id) {
+        return serviceRequestRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Service request not found"));
+    }
 
-        ServiceRequest serviceRequest =
-                serviceRequestRepository
-                        .findById(requestId)
-                        .orElseThrow(() ->
-                                new ResourceNotFoundException(
-                                        "Service request not found"
-                                )
-                        );
-
-        if (!serviceRequest.getWorkerProfile()
-                .getWorker()
-                .getId()
-                .equals(worker.getId())) {
-
-            throw new BadRequestException(
-                    "You are not allowed to request completion for this request"
-            );
+    private void validateCustomerOwnership(ServiceRequest sr, User customer) {
+        if (!sr.getCustomer().getId().equals(customer.getId())) {
+            throw new BadRequestException("Not allowed for this customer");
         }
+    }
 
-        if (serviceRequest.getStatus()
-                != ServiceRequestStatus.ACCEPTED) {
-
-            throw new BadRequestException(
-                    "Only accepted requests can move to completion request state"
-            );
+    private void validateWorkerOwnership(ServiceRequest sr, User worker) {
+        if (!sr.getWorkerProfile().getWorker().getId().equals(worker.getId())) {
+            throw new BadRequestException("Not allowed for this worker");
         }
-
-        serviceRequest.setStatus(
-                ServiceRequestStatus.WORK_COMPLETION_REQUESTED
-        );
-
-        ServiceRequest savedRequest =
-                serviceRequestRepository.save(
-                        serviceRequest
-                );
-
-        return mapToResponse(savedRequest);
     }
 }

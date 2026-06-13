@@ -30,9 +30,7 @@ public class ServiceRequestController {
             @RequestParam(required = false)
             ServiceRequestStatus status
     ) {
-        return serviceRequestService.getMyCustomerRequests(
-                status
-        );
+        return serviceRequestService.getMyCustomerRequests(status);
     }
 
     @GetMapping("/worker")
@@ -40,18 +38,16 @@ public class ServiceRequestController {
             @RequestParam(required = false)
             ServiceRequestStatus status
     ) {
-        return serviceRequestService.getMyWorkerRequests(
-                status
-        );
+        return serviceRequestService.getMyWorkerRequests(status);
     }
+
     @PatchMapping("/{requestId}/accept")
     public ServiceRequestResponse acceptRequest(
             @PathVariable Long requestId
     ) {
-        return serviceRequestService.acceptRequest(
-                requestId
-        );
+        return serviceRequestService.acceptRequest(requestId);
     }
+
     @PatchMapping("/{requestId}/reject")
     public ServiceRequestResponse rejectRequest(
             @PathVariable Long requestId,
@@ -62,22 +58,25 @@ public class ServiceRequestController {
                 request
         );
     }
-    @PatchMapping("/{requestId}/complete")
-    public ServiceRequestResponse completeRequest(
-            @PathVariable Long requestId
-    ) {
-        return serviceRequestService.completeRequest(
-                requestId
-        );
-    }
+
     @PatchMapping("/{requestId}/request-completion")
     public ServiceRequestResponse requestCompletion(
             @PathVariable Long requestId
     ) {
-        return serviceRequestService.requestCompletion(
-                requestId
-        );
+        return serviceRequestService.requestCompletion(requestId);
     }
 
+    @PatchMapping("/{requestId}/complete")
+    public ServiceRequestResponse completeRequest(
+            @PathVariable Long requestId
+    ) {
+        return serviceRequestService.completeRequest(requestId);
+    }
 
+    @PatchMapping("/{requestId}/cancel")
+    public ServiceRequestResponse cancelRequest(
+            @PathVariable Long requestId
+    ) {
+        return serviceRequestService.cancelRequest(requestId);
+    }
 }

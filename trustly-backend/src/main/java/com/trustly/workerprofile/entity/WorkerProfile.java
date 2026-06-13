@@ -7,6 +7,7 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -49,6 +50,12 @@ public class WorkerProfile {
     private String city;
 
     private String state;
+
+    @Column(nullable = false, precision = 3, scale = 2)
+    private BigDecimal averageRating = new BigDecimal("0.00");
+
+    @Column(nullable = false)
+    private Integer totalReviews = 0;
 
     @Column(nullable = false)
     private Boolean profileCompleted = false;
