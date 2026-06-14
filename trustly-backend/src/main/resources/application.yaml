@@ -2,9 +2,9 @@ spring:
   application:
     name: trustly-backend
   datasource:
-    url: jdbc:postgresql://localhost:5432/trustly
-    username: postgres
-    password: Jaymin@1310
+    url: jdbc:postgresql://ep-nameless-king-ao1gwd4e-pooler.c-2.ap-southeast-1.aws.neon.tech/neondb?sslmode=require
+    username: neondb_owner
+    password: npg_3HVXyzEv1PZO
   jpa:
     hibernate:
       ddl-auto: validate
