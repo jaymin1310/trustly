@@ -31,3 +31,6 @@ build/
 
 ### VS Code ###
 .vscode/
+
+trustly.sql
+trustly_utf8.sql
