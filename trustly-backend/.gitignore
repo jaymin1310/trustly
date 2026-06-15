@@ -34,3 +34,6 @@ build/
 
 trustly.sql
 trustly_utf8.sql
+
+uploads/worker-documents/
+application.yaml
