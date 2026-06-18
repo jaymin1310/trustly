@@ -2,6 +2,8 @@ import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios'
 import toast from 'react-hot-toast'
 import type { ApiErrorResponse, AuthResponse } from '../types/models'
 
+const API_URL = import.meta.env.VITE_API_URL ?? ''
+
 const ACCESS_TOKEN_KEY = 'trustly_access_token'
 const REFRESH_TOKEN_KEY = 'trustly_refresh_token'
 const AUTH_EMAIL_KEY = 'trustly_auth_email'
@@ -58,7 +60,7 @@ export const refreshAuthSession = async () => {
 
   if (!refreshPromise) {
     refreshPromise = axios
-      .post<AuthResponse>('/api/auth/refresh', { refreshToken })
+      .post<AuthResponse>(`${API_URL}/api/auth/refresh`, { refreshToken })
       .then(({ data }) => {
         setAuthSession(data)
         window.dispatchEvent(new CustomEvent<AuthResponse>('auth-refreshed', { detail: data }))
@@ -78,7 +80,7 @@ export const refreshAuthSession = async () => {
 }
 
 export const apiClient = axios.create({
-  baseURL: '',
+  baseURL: API_URL,
   headers: { 'Content-Type': 'application/json' },
 })
 
