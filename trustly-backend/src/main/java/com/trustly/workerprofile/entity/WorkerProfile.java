@@ -51,12 +51,13 @@ public class WorkerProfile {
 
     private String state;
 
+    @Builder.Default
     @Column(nullable = false, precision = 3, scale = 2)
     private BigDecimal averageRating = new BigDecimal("0.00");
-
+    @Builder.Default
     @Column(nullable = false)
     private Integer totalReviews = 0;
-
+    @Builder.Default
     @Column(nullable = false)
     private Boolean profileCompleted = false;
 

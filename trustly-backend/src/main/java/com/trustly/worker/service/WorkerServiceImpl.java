@@ -1,5 +1,6 @@
 package com.trustly.worker.service;
 
+import com.cloudinary.Cloudinary;
 import com.trustly.category.entity.ServiceCategory;
 import com.trustly.category.repository.ServiceCategoryRepository;
 import com.trustly.common.enums.Role;

@@ -4,6 +4,7 @@ import com.trustly.common.enums.ServiceRequestStatus;
 import com.trustly.common.exception.BadRequestException;
 import com.trustly.common.exception.ResourceNotFoundException;
 import com.trustly.common.util.SecurityUtils;
+import com.trustly.complaint.service.WorkerPenaltyEnforcementService;
 import com.trustly.servicerequest.dto.request.CreateServiceRequestRequest;
 import com.trustly.servicerequest.dto.request.RejectServiceRequestRequest;
 import com.trustly.servicerequest.dto.response.ServiceRequestResponse;
@@ -29,6 +30,7 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
     private final UserRepository userRepository;
     private final WorkerProfileRepository workerProfileRepository;
     private final ServiceRequestMapper serviceRequestMapper;
+    private final WorkerPenaltyEnforcementService workerPenaltyEnforcementService;
 
     // ---------------- CREATE ----------------
     @Override
@@ -141,6 +143,9 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
         ServiceRequest sr = getRequestOrThrow(requestId);
 
         validateWorkerOwnership(sr, worker);
+        workerPenaltyEnforcementService.validateWorkerCanOperate(
+                sr.getWorkerProfile().getId()
+        );
 
         if (sr.getStatus() != ServiceRequestStatus.PENDING) {
             throw new BadRequestException("Only pending requests can be accepted");
@@ -160,6 +165,9 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
         ServiceRequest sr = getRequestOrThrow(requestId);
 
         validateWorkerOwnership(sr, worker);
+        workerPenaltyEnforcementService.validateWorkerCanOperate(
+                sr.getWorkerProfile().getId()
+        );
 
         if (sr.getStatus() != ServiceRequestStatus.PENDING) {
             throw new BadRequestException("Only pending requests can be rejected");
@@ -180,6 +188,9 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
         ServiceRequest sr = getRequestOrThrow(requestId);
 
         validateWorkerOwnership(sr, worker);
+        workerPenaltyEnforcementService.validateWorkerCanOperate(
+                sr.getWorkerProfile().getId()
+        );
 
         if (sr.getStatus() != ServiceRequestStatus.ACCEPTED) {
             throw new BadRequestException("Only accepted requests can request completion");

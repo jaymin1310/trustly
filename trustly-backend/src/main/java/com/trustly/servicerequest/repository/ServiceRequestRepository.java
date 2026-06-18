@@ -31,4 +31,8 @@ public interface ServiceRequestRepository
             Long workerId,
             ServiceRequestStatus status
     );
+
+    long countByStatus(
+            ServiceRequestStatus status
+    );
 }
