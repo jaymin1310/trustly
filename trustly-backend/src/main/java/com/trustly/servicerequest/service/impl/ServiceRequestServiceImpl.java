@@ -5,6 +5,7 @@ import com.trustly.common.exception.BadRequestException;
 import com.trustly.common.exception.ResourceNotFoundException;
 import com.trustly.common.util.SecurityUtils;
 import com.trustly.complaint.service.WorkerPenaltyEnforcementService;
+import com.trustly.servicerequest.dto.request.CancelServiceRequestRequest;
 import com.trustly.servicerequest.dto.request.CreateServiceRequestRequest;
 import com.trustly.servicerequest.dto.request.RejectServiceRequestRequest;
 import com.trustly.servicerequest.dto.response.ServiceRequestResponse;
@@ -73,7 +74,10 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
 
     // ---------------- CANCEL ----------------
     @Override
-    public ServiceRequestResponse cancelRequest(Long requestId) {
+    public ServiceRequestResponse cancelRequest(
+            Long requestId,
+            CancelServiceRequestRequest request
+    ) {
 
         User customer = getCurrentUser();
 
@@ -99,6 +103,7 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
 
         sr.setStatus(ServiceRequestStatus.CANCELLED);
         sr.setRespondedAt(LocalDateTime.now());
+        sr.setCustomerRemark(request.getCustomerRemark());
 
         return serviceRequestMapper.toResponse(serviceRequestRepository.save(sr));
     }
@@ -124,10 +129,11 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
 
         User worker = getCurrentUser();
 
-        List<ServiceRequest> list = serviceRequestRepository
-                .findByWorkerProfileWorkerIdAndStatusOrderByRequestedAtDesc(
+        List<ServiceRequest> list = (status == null)
+                ? serviceRequestRepository.findByWorkerProfileWorkerIdOrderByRequestedAtDesc(worker.getId())
+                : serviceRequestRepository.findByWorkerProfileWorkerIdAndStatusOrderByRequestedAtDesc(
                         worker.getId(),
-                        status == null ? ServiceRequestStatus.PENDING : status
+                        status
                 );
 
         return list.stream()

@@ -53,4 +53,7 @@ public class ServiceRequest {
     @Column(length = 500)
     private String workerRemark;
 
+    @Column(length = 500)
+    private String customerRemark;
+
 }

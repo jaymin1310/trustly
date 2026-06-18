@@ -1,6 +1,7 @@
 package com.trustly.servicerequest.service;
 
 import com.trustly.common.enums.ServiceRequestStatus;
+import com.trustly.servicerequest.dto.request.CancelServiceRequestRequest;
 import com.trustly.servicerequest.dto.request.CreateServiceRequestRequest;
 import com.trustly.servicerequest.dto.request.RejectServiceRequestRequest;
 import com.trustly.servicerequest.dto.response.ServiceRequestResponse;
@@ -32,5 +33,8 @@ public interface ServiceRequestService {
     ServiceRequestResponse requestCompletion(
             Long requestId
     );
-    ServiceRequestResponse cancelRequest(Long requestId);
+    ServiceRequestResponse cancelRequest(
+            Long requestId,
+            CancelServiceRequestRequest request
+    );
 }

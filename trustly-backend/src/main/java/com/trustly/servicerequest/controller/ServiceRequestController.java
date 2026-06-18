@@ -1,6 +1,7 @@
 package com.trustly.servicerequest.controller;
 
 import com.trustly.common.enums.ServiceRequestStatus;
+import com.trustly.servicerequest.dto.request.CancelServiceRequestRequest;
 import com.trustly.servicerequest.dto.request.CreateServiceRequestRequest;
 import com.trustly.servicerequest.dto.request.RejectServiceRequestRequest;
 import com.trustly.servicerequest.dto.response.ServiceRequestResponse;
@@ -75,8 +76,9 @@ public class ServiceRequestController {
 
     @PatchMapping("/{requestId}/cancel")
     public ServiceRequestResponse cancelRequest(
-            @PathVariable Long requestId
+            @PathVariable Long requestId,
+            @Valid @RequestBody CancelServiceRequestRequest request
     ) {
-        return serviceRequestService.cancelRequest(requestId);
+        return serviceRequestService.cancelRequest(requestId, request);
     }
 }

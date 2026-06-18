@@ -42,6 +42,7 @@ public class ServiceRequestMapper {
                 .completedAt(sr.getCompletedAt())
 
                 .workerRemark(sr.getWorkerRemark())
+                .customerRemark(sr.getCustomerRemark())
 
                 .build();
     }

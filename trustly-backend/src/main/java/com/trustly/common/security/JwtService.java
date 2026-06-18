@@ -5,6 +5,7 @@ import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
@@ -28,6 +29,14 @@ public class JwtService {
         Map<String, Object> claims = new HashMap<>();
         claims.put("tokenVersion", tokenVersion);
         claims.put("type", "ACCESS");
+        claims.put(
+                "roles",
+                userDetails.getAuthorities()
+                        .stream()
+                        .map(GrantedAuthority::getAuthority)
+                        .map(authority -> authority.replaceFirst("^ROLE_", ""))
+                        .toList()
+        );
         return generateToken(claims, userDetails, accessTokenExpiration);
     }
     public String generateRefreshToken(UserDetails userDetails, int tokenVersion) {

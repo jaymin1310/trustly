@@ -30,4 +30,5 @@ public class ServiceRequestResponse {
     private LocalDateTime completedAt;
 
     private String workerRemark;
+    private String customerRemark;
 }
