@@ -4,7 +4,7 @@ import com.trustly.common.response.ErrorResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -156,9 +156,9 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(response);
     }
 
-    @ExceptionHandler(BadCredentialsException.class)
+    @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<ErrorResponse> handleBadCredentials(
-            BadCredentialsException ex
+            AuthenticationException ex
     ) {
         log.warn("Invalid credentials");
 

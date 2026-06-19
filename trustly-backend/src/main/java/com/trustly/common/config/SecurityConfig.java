@@ -71,7 +71,9 @@ public class SecurityConfig {
                                 "/api/auth/reset-password",
                                 "/api/auth/resend-reset-otp",
                                 "/api/auth/logout",
-                                "/api/auth/refresh"
+                                "/api/auth/refresh",
+                                "/api/categories",
+                                "/workers"
                         ).permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
