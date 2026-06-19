@@ -63,6 +63,11 @@ textarea {
   font: inherit;
 }
 
+input::placeholder {
+  color: var(--text-muted);
+  opacity: 1;
+}
+
 button {
   cursor: pointer;
   border: none;
@@ -442,3 +447,4 @@ aside.sidebar nav a:hover {
 aside.sidebar nav > div {
   transform: none !important;
 }
+
