@@ -112,7 +112,7 @@ export function ForgotPasswordPage() {
               required
               inputMode="numeric"
               maxLength={6}
-              placeholder="000000"
+              placeholder="******"
             />
             <Input
               label="New Password"

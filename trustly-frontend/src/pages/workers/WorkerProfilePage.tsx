@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import { workerProfileApi } from '../../api/workerProfile.api'
 import { Badge } from '../../components/ui/Badge'
@@ -7,6 +7,7 @@ import { Input } from '../../components/ui/Input'
 import { Skeleton } from '../../components/ui/Skeleton'
 import { Textarea } from '../../components/ui/Textarea'
 import { useFormErrors } from '../../hooks/useFormErrors'
+import { getCitiesForState, INDIA_STATES, isKnownIndianState } from '../../data/indiaLocations'
 import type { WorkerProfileResponse } from '../../types/models'
 
 export function WorkerProfilePage() {
@@ -14,13 +15,20 @@ export function WorkerProfilePage() {
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [editing, setEditing] = useState(false)
-  const completionPromptShown = useRef(false)
-  const { getError, handleApiError, clearErrors, formError } = useFormErrors()
+  const { getError, handleApiError, clearErrors, formError, setFieldErrors } = useFormErrors()
 
   const [bio, setBio] = useState('')
   const [experienceYears, setExperienceYears] = useState('0')
   const [city, setCity] = useState('')
   const [state, setStateVal] = useState('')
+
+  const cityOptions = useMemo(() => getCitiesForState(state), [state])
+  const hasSelectedState = isKnownIndianState(state)
+
+  const handleStateChange = (value: string) => {
+    setStateVal(value)
+    setCity('')
+  }
 
   const fillFormFromProfile = (p: WorkerProfileResponse) => {
     setBio(p.bio ?? '')
@@ -36,10 +44,6 @@ export function WorkerProfilePage() {
         setProfile(p)
         fillFormFromProfile(p)
         setEditing(!p.profileCompleted)
-        if (!p.profileCompleted && !completionPromptShown.current) {
-          toast('Complete your worker profile', { icon: '!' })
-          completionPromptShown.current = true
-        }
       })
       .finally(() => setLoading(false))
   }, [])
@@ -47,6 +51,17 @@ export function WorkerProfilePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     clearErrors()
+
+    if (!hasSelectedState) {
+      setFieldErrors({ state: 'Select a valid state from the list' })
+      return
+    }
+
+    if (!cityOptions.includes(city)) {
+      setFieldErrors({ city: 'Select a valid city from the selected state' })
+      return
+    }
+
     setSubmitting(true)
     try {
       await workerProfileApi.complete({
@@ -106,8 +121,37 @@ export function WorkerProfilePage() {
           <form onSubmit={handleSubmit} className="form-grid two-col">
             <Textarea label="Bio" name="bio" value={bio} onChange={(e) => setBio(e.target.value)} error={getError('bio')} required className="full-width" />
             <Input label="Experience (years)" name="experienceYears" type="number" min={0} value={experienceYears} onChange={(e) => setExperienceYears(e.target.value)} error={getError('experienceYears')} required />
-            <Input label="City" name="city" value={city} onChange={(e) => setCity(e.target.value)} error={getError('city')} required />
-            <Input label="State" name="state" value={state} onChange={(e) => setStateVal(e.target.value)} error={getError('state')} required />
+            <Input
+              label="State"
+              name="state"
+              value={state}
+              onChange={(e) => handleStateChange(e.target.value)}
+              error={getError('state')}
+              list="india-state-options"
+              placeholder="Search and select state"
+              required
+            />
+            <datalist id="india-state-options">
+              {INDIA_STATES.map((stateName) => (
+                <option key={stateName} value={stateName} />
+              ))}
+            </datalist>
+            <Input
+              label="City"
+              name="city"
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              error={getError('city')}
+              list="india-city-options"
+              placeholder={hasSelectedState ? 'Search and select city' : 'Select state first'}
+              disabled={!hasSelectedState}
+              required
+            />
+            <datalist id="india-city-options">
+              {cityOptions.map((cityName) => (
+                <option key={cityName} value={cityName} />
+              ))}
+            </datalist>
             {formError && <p className="form-error full-width">{formError}</p>}
             <div className="form-actions full-width">
               {profile?.profileCompleted && (

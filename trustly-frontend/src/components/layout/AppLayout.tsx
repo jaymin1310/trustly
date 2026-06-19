@@ -39,10 +39,18 @@ export function AppLayout() {
   useEffect(() => {
     if (!isWorker || isAdmin) return
 
+    if (location.pathname === '/worker-profile') {
+      toast.dismiss('complete-worker-profile')
+      return
+    }
+
     workerProfileApi
       .getMy()
       .then((profile) => {
-        if (profile.profileCompleted) return
+        if (profile.profileCompleted) {
+          toast.dismiss('complete-worker-profile')
+          return
+        }
 
         toast(
           (t) => (
@@ -68,7 +76,7 @@ export function AppLayout() {
         )
       })
       .catch(() => undefined)
-  }, [isAdmin, isWorker, navigate])
+  }, [isAdmin, isWorker, location.pathname, navigate])
 
   const handleLogout = async () => {
     await logout()

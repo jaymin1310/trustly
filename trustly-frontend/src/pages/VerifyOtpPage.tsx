@@ -76,7 +76,7 @@ export function VerifyOtpPage() {
             required
             inputMode="numeric"
             maxLength={6}
-            placeholder="000000"
+            placeholder="******"
           />
           {formError && <p className="form-error">{formError}</p>}
           <Button type="submit" loading={loading} style={{ width: '100%' }}>
